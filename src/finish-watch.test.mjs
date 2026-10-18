@@ -11,13 +11,20 @@ const target = {
   sha256: PINNED_RELEASES["1.2.1"],
   action: "published",
   checkedAt: new Date(now).toISOString(),
-  published: { state: "PUBLISHED", channels: [{ version: "1.2.1", deployPercentage: 100 }] },
+  published: {
+    state: "PUBLISHED",
+    channels: [{ version: "1.2.1", deployPercentage: 100 }],
+  },
 };
 
 test("an older pending review or submitted target keeps the cloud watch running", () => {
   for (const action of ["waiting_review", "submitted", "waiting_upload"]) {
     const result = finishReviewWatch(
-      { ...target, action, published: { state: "PUBLISHED", channels: [{ version: "1.1.0" }] } },
+      {
+        ...target,
+        action,
+        published: { state: "PUBLISHED", channels: [{ version: "1.1.0" }] },
+      },
       { now, run: () => assert.fail("Review checks must keep running") },
     );
     assert.equal(result.action, "watching");
@@ -26,7 +33,10 @@ test("an older pending review or submitted target keeps the cloud watch running"
 
 test("fresh target publication disables only its dedicated scheduler and preserves future releases", () => {
   const calls = [];
-  const result = finishReviewWatch(target, { now, run: (args) => calls.push(args) });
+  const result = finishReviewWatch(target, {
+    now,
+    run: (args) => calls.push(args),
+  });
   assert.equal(result.action, "stopped");
   assert.deepEqual(calls, [
     [
@@ -52,8 +62,18 @@ test("another item, different bytes, stale receipt and unverified publication ca
     { takenDown: true },
     { published: { state: "STAGED", channels: [{ version: "1.2.1" }] } },
     { published: { state: "PUBLISHED", channels: [{ version: "1.2.0" }] } },
-    { published: { state: "PUBLISHED", channels: [{ version: "1.2.1", deployPercentage: 10 }] } },
-    { published: { state: "PUBLISHED_TO_TESTERS", channels: [{ version: "1.2.1" }] } },
+    {
+      published: {
+        state: "PUBLISHED",
+        channels: [{ version: "1.2.1", deployPercentage: 10 }],
+      },
+    },
+    {
+      published: {
+        state: "PUBLISHED_TO_TESTERS",
+        channels: [{ version: "1.2.1" }],
+      },
+    },
   ]) {
     const calls = [];
     assert.throws(() =>

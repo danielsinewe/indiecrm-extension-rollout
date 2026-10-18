@@ -7,11 +7,15 @@ export function snapshot(status) {
     value
       ? {
           state: value.state,
-          channels: (value.distributionChannels ?? []).map(({ crxVersion, deployPercentage }) => {
-            if (!validVersion(crxVersion))
-              throw new Error("Google did not identify the revision version.");
-            return { version: crxVersion, deployPercentage };
-          }),
+          channels: (value.distributionChannels ?? []).map(
+            ({ crxVersion, deployPercentage }) => {
+              if (!validVersion(crxVersion))
+                throw new Error(
+                  "Google did not identify the revision version.",
+                );
+              return { version: crxVersion, deployPercentage };
+            },
+          ),
         }
       : null;
   return {
@@ -33,13 +37,22 @@ export function releasePlan(status, version) {
     );
   const published = state.published?.channels ?? [];
   const submitted = state.submitted?.channels ?? [];
-  if ([...published, ...submitted].some((c) => compareVersions(c.version, version) > 0))
-    throw new Error("A newer version already exists. Refusing to downgrade or replace it.");
+  if (
+    [...published, ...submitted].some(
+      (c) => compareVersions(c.version, version) > 0,
+    )
+  )
+    throw new Error(
+      "A newer version already exists. Refusing to downgrade or replace it.",
+    );
   if (published.some((c) => compareVersions(c.version, version) === 0))
     return { action: "published", ...state };
   if (state.submitted && !submitted.length)
-    throw new Error("Google returned an unidentified submitted revision. No upload is safe.");
-  if (state.submitted?.state === "PENDING_REVIEW") return { action: "waiting_review", ...state };
+    throw new Error(
+      "Google returned an unidentified submitted revision. No upload is safe.",
+    );
+  if (state.submitted?.state === "PENDING_REVIEW")
+    return { action: "waiting_review", ...state };
   if (state.submitted?.state === "STAGED") {
     if (submitted.every((c) => compareVersions(c.version, version) === 0))
       return { action: "publish_staged", ...state };
@@ -47,7 +60,9 @@ export function releasePlan(status, version) {
   }
   if (
     state.submitted &&
-    !["CANCELLED", "PUBLISHED", "PUBLISHED_TO_TESTERS"].includes(state.submitted.state)
+    !["CANCELLED", "PUBLISHED", "PUBLISHED_TO_TESTERS"].includes(
+      state.submitted.state,
+    )
   )
     throw new Error(
       `Submitted revision is ${state.submitted.state}. Resolve it before another submission.`,
@@ -61,7 +76,11 @@ export function releasePlan(status, version) {
   return { action: "upload", ...state };
 }
 
-export async function publishRelease(api, release, { receipt = {}, save = async () => {} } = {}) {
+export async function publishRelease(
+  api,
+  release,
+  { receipt = {}, save = async () => {} } = {},
+) {
   const before = await api("fetchStatus");
   const plan = releasePlan(before, release.version);
   const result = {
@@ -74,9 +93,12 @@ export async function publishRelease(api, release, { receipt = {}, save = async 
     ...plan,
   };
   if (
-    ["published", "waiting_review", "waiting_other_staged_release", "waiting_upload"].includes(
-      plan.action,
-    )
+    [
+      "published",
+      "waiting_review",
+      "waiting_other_staged_release",
+      "waiting_upload",
+    ].includes(plan.action)
   ) {
     await save(result);
     return result;
@@ -98,13 +120,26 @@ export async function publishRelease(api, release, { receipt = {}, save = async 
       receipt.version === release.version &&
       receipt.sha256 === release.sha256;
     if (!uploaded) {
-      await save({ ...result, action: "uploading", uploadAttempted: true, uploaded: false });
+      await save({
+        ...result,
+        action: "uploading",
+        uploadAttempted: true,
+        uploaded: false,
+      });
       const upload = await api("upload", release.bytes);
-      if (upload.uploadState !== "SUCCEEDED" || upload.crxVersion !== release.version)
+      if (
+        upload.uploadState !== "SUCCEEDED" ||
+        upload.crxVersion !== release.version
+      )
         throw new Error(
           "Google has not confirmed the uploaded version. Check the stored receipt and upload status before retrying.",
         );
-      await save({ ...result, action: "uploaded", uploadAttempted: true, uploaded: true });
+      await save({
+        ...result,
+        action: "uploaded",
+        uploadAttempted: true,
+        uploaded: true,
+      });
     }
   }
   const latest = await api("fetchStatus");

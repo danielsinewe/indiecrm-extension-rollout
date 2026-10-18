@@ -1,0 +1,83 @@
+name: Reconcile IndieCRM Connect
+run-name: Chrome Web Store · ${{ inputs.command }} · ${{ inputs.request_id || github.run_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        type: choice
+        description: Store operation
+        options: [doctor, status, plan, publish]
+        default: status
+        required: true
+      release_tag:
+        type: string
+        description: Exact tested release
+        default: chrome-extension-v1.2.1
+      request_id:
+        type: string
+        description: CLI or scheduler correlation
+
+permissions:
+  contents: read
+
+concurrency:
+  group: indiecrm-chrome-webstore
+  cancel-in-progress: false
+
+jobs:
+  store:
+    if: github.repository == 'danielsinewe/indiecrm-extension-rollout' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      STORE_COMMAND: ${{ inputs.command }}
+      STORE_RELEASE: ${{ inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: main
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+      - name: Prepare receipt and check configuration
+        env:
+          STORE_ENABLED: ${{ vars.CHROME_WEBSTORE_PUBLISH_ENABLED }}
+        run: |
+          echo "STORE_RECEIPT=$RUNNER_TEMP/chrome-webstore.json" >> "$GITHUB_ENV"
+          if [ "$STORE_COMMAND" = publish ] && [ "$STORE_ENABLED" != true ]; then
+            echo 'Publication is not enabled.' >&2
+            exit 1
+          fi
+      - name: Authenticate with the exact main-workflow identity
+        id: google
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.CHROME_WEBSTORE_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.CHROME_WEBSTORE_SERVICE_ACCOUNT }}
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/chromewebstore,https://www.googleapis.com/auth/devstorage.read_write
+          create_credentials_file: false
+      - name: Reconcile the pinned private release and checkpoint
+        env:
+          CHROME_WEBSTORE_ACCESS_TOKEN: ${{ steps.google.outputs.access_token }}
+        run: node src/run.mjs "$STORE_COMMAND"
+      - name: Record workload authentication failures
+        if: failure() && steps.google.outcome == 'failure'
+        run: |
+          node -e 'const {writeFileSync}=require("node:fs"); const r={itemId:"eiabmmajcanapfaphkammeieoiagmifc",command:process.env.STORE_COMMAND,error:"Google rejected the cloud workload identity. Inspect the authentication step; no Store API request was made."}; writeFileSync(process.env.STORE_RECEIPT,JSON.stringify(r)); console.log("INDIECRM_CHROME_WEBSTORE_RECEIPT:"+JSON.stringify(r));'
+      - name: Show sanitized release status
+        if: always()
+        run: |
+          if [ -f "$STORE_RECEIPT" ]; then
+            {
+              echo '```json'
+              cat "$STORE_RECEIPT"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi

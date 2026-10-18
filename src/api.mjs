@@ -18,7 +18,12 @@ export function storeApi(getToken, fetcher = fetch) {
             Authorization: `Bearer ${token}`,
             ...(action === "fetchStatus"
               ? {}
-              : { "Content-Type": action === "upload" ? "application/zip" : "application/json" }),
+              : {
+                  "Content-Type":
+                    action === "upload"
+                      ? "application/zip"
+                      : "application/json",
+                }),
           },
           ...(action === "fetchStatus"
             ? {}

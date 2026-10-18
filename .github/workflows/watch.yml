@@ -1,0 +1,26 @@
+name: Watch IndieCRM Connect 1.2.1 review
+run-name: Chrome review watch · ${{ github.event_name }} · ${{ github.run_id }}
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: indiecrm-chrome-review-watch
+  cancel-in-progress: false
+jobs:
+  check-review:
+    if: github.repository == 'danielsinewe/indiecrm-extension-rollout' && github.ref == 'refs/heads/main' && vars.CHROME_WEBSTORE_PUBLISH_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Queue the isolated keyless publisher
+        run: |
+          gh workflow run store.yml --repo danielsinewe/indiecrm-extension-rollout --ref main \
+            -f command=publish -f release_tag=chrome-extension-v1.2.1 \
+            -f "request_id=review-watch-$GITHUB_RUN_ID"
+          echo 'Queued the pinned 1.2.1 release for a keyless Google review check.' >> "$GITHUB_STEP_SUMMARY"

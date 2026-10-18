@@ -19,7 +19,8 @@ export function validVersion(value) {
 }
 
 export function compareVersions(a, b) {
-  if (!validVersion(a) || !validVersion(b)) throw new Error("Invalid Chrome extension version.");
+  if (!validVersion(a) || !validVersion(b))
+    throw new Error("Invalid Chrome extension version.");
   const left = a.split(".").map(Number),
     right = b.split(".").map(Number);
   for (let i = 0; i < 4; i++) {
