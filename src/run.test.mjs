@@ -1,7 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ITEM, NAME, PINNED_RELEASES, VERSION } from "./config.mjs";
-import { reconcile } from "./run.mjs";
+import { reconcile, reconcileRollout } from "./run.mjs";
+import { finishReviewWatch } from "./finish-watch.mjs";
 
 const revision = (version, state) => ({
   state,
@@ -117,5 +118,140 @@ test("another item's checkpoint and failed pre-upload persistence prevent Store 
       }),
     );
     assert.deepEqual(writes, []);
+  }
+});
+
+test("the cloud chain waits for 1.2.1, submits 1.2.2 once, and stops only after final publication", async () => {
+  let current = {
+    ...status(),
+    submittedItemRevisionStatus: revision("1.2.1", "PENDING_REVIEW"),
+  };
+  let uploads = 0,
+    publications = 0,
+    stopped = 0;
+  const receipts = new Map();
+  const options = {
+    api: async (action, bytes) => {
+      if (action === "fetchStatus") return current;
+      if (action === "upload") {
+        uploads++;
+        assert.deepEqual(bytes, release.bytes);
+        return { uploadState: "SUCCEEDED", crxVersion: VERSION };
+      }
+      if (action === "publish") {
+        publications++;
+        current =
+          current.submittedItemRevisionStatus?.state === "STAGED"
+            ? {
+                ...status(),
+                publishedItemRevisionStatus: revision(VERSION, "PUBLISHED"),
+              }
+            : {
+                ...current,
+                submittedItemRevisionStatus: revision(
+                  VERSION,
+                  "PENDING_REVIEW",
+                ),
+              };
+        return {};
+      }
+      assert.fail(`Unexpected ${action}`);
+    },
+    storageFor: (version) => ({
+      readReceipt: async () => receipts.get(version) ?? {},
+      saveReceipt: async (receipt) =>
+        receipts.set(version, structuredClone(receipt)),
+    }),
+    loadArtifact: async (version) => {
+      assert.equal(version, VERSION);
+      return release;
+    },
+    finish: (receipt) => finishReviewWatch(receipt, { run: () => stopped++ }),
+  };
+  assert.equal(
+    (await reconcileRollout("publish", options)).action,
+    "waiting_review",
+  );
+  assert.equal(uploads, 0);
+  assert.equal(publications, 0);
+  assert.equal(receipts.has("1.2.1"), false);
+  current = {
+    ...status(),
+    publishedItemRevisionStatus: revision("1.2.1", "PUBLISHED"),
+  };
+  assert.equal(
+    (await reconcileRollout("publish", options)).action,
+    "submitted",
+  );
+  assert.equal(
+    (await reconcileRollout("publish", options)).action,
+    "waiting_review",
+  );
+  assert.equal(uploads, 1);
+  assert.equal(publications, 1);
+  assert.equal(stopped, 0);
+  current = {
+    ...current,
+    submittedItemRevisionStatus: revision(VERSION, "STAGED"),
+  };
+  const result = await reconcileRollout("publish", options);
+  assert.equal(result.action, "published");
+  assert.equal(result.reviewWatch.action, "stopped");
+  assert.equal(stopped, 1);
+  assert.equal(uploads, 1);
+  assert.equal(publications, 2);
+  assert.equal(receipts.get(VERSION).sha256, PINNED_RELEASES[VERSION]);
+});
+
+test("an approved staged predecessor publishes before the target and keeps separate pinned checkpoints", async () => {
+  let current = {
+    ...status(),
+    submittedItemRevisionStatus: revision("1.2.1", "STAGED"),
+  };
+  const operations = [],
+    receipts = new Map();
+  const result = await reconcileRollout("publish", {
+    api: async (action) => {
+      if (action === "fetchStatus") return current;
+      operations.push(action);
+      if (action === "upload")
+        return { uploadState: "SUCCEEDED", crxVersion: VERSION };
+      if (action === "publish") {
+        current =
+          current.submittedItemRevisionStatus?.state === "STAGED"
+            ? {
+                ...status(),
+                publishedItemRevisionStatus: revision("1.2.1", "PUBLISHED"),
+              }
+            : {
+                ...current,
+                submittedItemRevisionStatus: revision(
+                  VERSION,
+                  "PENDING_REVIEW",
+                ),
+              };
+        return {};
+      }
+      assert.fail(`Unexpected ${action}`);
+    },
+    storageFor: (version) => ({
+      readReceipt: async () => receipts.get(version) ?? {},
+      saveReceipt: async (receipt) =>
+        receipts.set(version, structuredClone(receipt)),
+    }),
+    loadArtifact: async (version) => {
+      assert.equal(version, VERSION);
+      return release;
+    },
+    finish: (receipt) =>
+      finishReviewWatch(receipt, {
+        run: () => assert.fail("Do not stop at predecessor publication"),
+      }),
+  });
+  assert.equal(result.action, "submitted");
+  assert.deepEqual(operations, ["publish", "upload", "publish"]);
+  for (const version of ["1.2.1", VERSION]) {
+    assert.equal(receipts.get(version).version, version);
+    assert.equal(receipts.get(version).sha256, PINNED_RELEASES[version]);
   }
 });

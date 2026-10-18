@@ -1,9 +1,12 @@
-import { BUCKET, VERSION } from "./config.mjs";
+import { BUCKET, VERSION, releaseVersion } from "./config.mjs";
 
 export const RECEIPT_OBJECT = `releases/${VERSION}/receipt.json`;
 export const ARTIFACT_OBJECT = `releases/${VERSION}/indiecrm-connect-${VERSION}.zip`;
 
-export function privateStorage(token, fetcher = fetch) {
+export function privateStorage(token, fetcher = fetch, version = VERSION) {
+  releaseVersion(`chrome-extension-v${version}`);
+  const receiptObject = `releases/${version}/receipt.json`;
+  const artifactObject = `releases/${version}/indiecrm-connect-${version}.zip`;
   let generation = "0";
   const request = async (url, options = {}) => {
     let response;
@@ -25,7 +28,7 @@ export function privateStorage(token, fetcher = fetch) {
     `https://storage.googleapis.com/storage/v1/b/${BUCKET}/o/${encodeURIComponent(object)}`;
   return {
     async readReceipt() {
-      const metadata = await request(url(RECEIPT_OBJECT));
+      const metadata = await request(url(receiptObject));
       if (metadata.status === 404) return {};
       if (!metadata.ok)
         throw new Error(
@@ -34,13 +37,13 @@ export function privateStorage(token, fetcher = fetch) {
       const body = await metadata.json();
       if (
         body.bucket !== BUCKET ||
-        body.name !== RECEIPT_OBJECT ||
+        body.name !== receiptObject ||
         !/^\d+$/.test(body.generation)
       )
         throw new Error("Private receipt identity was not verified.");
       generation = body.generation;
       const response = await request(
-        `${url(RECEIPT_OBJECT)}?alt=media&generation=${generation}`,
+        `${url(receiptObject)}?alt=media&generation=${generation}`,
       );
       if (!response.ok)
         throw new Error(
@@ -50,7 +53,7 @@ export function privateStorage(token, fetcher = fetch) {
     },
     async saveReceipt(receipt) {
       const response = await request(
-        `https://storage.googleapis.com/upload/storage/v1/b/${BUCKET}/o?uploadType=media&name=${encodeURIComponent(RECEIPT_OBJECT)}&ifGenerationMatch=${generation}`,
+        `https://storage.googleapis.com/upload/storage/v1/b/${BUCKET}/o?uploadType=media&name=${encodeURIComponent(receiptObject)}&ifGenerationMatch=${generation}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -64,14 +67,14 @@ export function privateStorage(token, fetcher = fetch) {
       const body = await response.json();
       if (
         body.bucket !== BUCKET ||
-        body.name !== RECEIPT_OBJECT ||
+        body.name !== receiptObject ||
         !/^\d+$/.test(body.generation)
       )
         throw new Error("The saved receipt identity was not verified.");
       generation = body.generation;
     },
     async artifactBytes() {
-      const response = await request(`${url(ARTIFACT_OBJECT)}?alt=media`);
+      const response = await request(`${url(artifactObject)}?alt=media`);
       if (!response.ok)
         throw new Error(
           `Private release ZIP returned HTTP ${response.status}.`,

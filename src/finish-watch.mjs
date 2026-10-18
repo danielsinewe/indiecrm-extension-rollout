@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { ITEM, PINNED_RELEASES, REPOSITORY } from "./config.mjs";
+import { ITEM, PINNED_RELEASES, REPOSITORY, VERSION } from "./config.mjs";
 
 export const REVIEW_WORKFLOW = "watch.yml";
 
@@ -20,14 +20,14 @@ export function finishReviewWatch(
 ) {
   if (
     receipt.itemId !== ITEM ||
-    receipt.version !== "1.2.1" ||
-    receipt.sha256 !== PINNED_RELEASES["1.2.1"] ||
+    !Object.hasOwn(PINNED_RELEASES, receipt.version) ||
+    receipt.sha256 !== PINNED_RELEASES[receipt.version] ||
     receipt.command !== "publish"
   )
     throw new Error(
-      "The review watch requires the exact IndieCRM 1.2.1 publication receipt.",
+      "The review watch requires an exact pinned IndieCRM publication receipt.",
     );
-  if (receipt.action !== "published")
+  if (receipt.version !== VERSION || receipt.action !== "published")
     return { action: "watching", state: receipt.action };
   const age = now - Date.parse(receipt.checkedAt);
   if (
@@ -41,7 +41,7 @@ export function finishReviewWatch(
     !receipt.published.channels?.length ||
     !receipt.published.channels.every(
       (channel) =>
-        channel.version === "1.2.1" && channel.deployPercentage === 100,
+        channel.version === VERSION && channel.deployPercentage === 100,
     )
   )
     throw new Error(
@@ -56,7 +56,7 @@ export function finishReviewWatch(
   return {
     action: "stopped",
     workflow: REVIEW_WORKFLOW,
-    publishedVersion: "1.2.1",
+    publishedVersion: VERSION,
   };
 }
 

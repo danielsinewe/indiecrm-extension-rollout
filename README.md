@@ -9,10 +9,19 @@ private application repository's Actions allowance. Google authentication uses
 short-lived GitHub workload identity, restricted to this repository's numeric
 identity and the release workflow on `main`.
 
-The original tested 1.2.1 ZIP and progress receipt live in a private Google Cloud
-Storage bucket. Every upload verifies its pinned SHA-256 and manifest. The
-controller preserves pending reviews, resumes acknowledged progress and stops
-the scheduled watcher only after Google confirms 1.2.1 published at 100%.
+The original tested 1.2.1 and 1.2.2 ZIPs and separate progress receipts live in a
+private Google Cloud Storage bucket. Every upload verifies its pinned SHA-256
+and manifest. The controller preserves the pending 1.2.1 review, then submits the
+exact 1.2.2 ZIP when Google permits it. An approved staged 1.2.1 is published
+before advancing. Submissions use DEFAULT_PUBLISH so Google publishes each
+approved release automatically.
+
+The hosted watcher checks every 15 minutes, resumes acknowledged progress and
+stops only after Google confirms 1.2.2 published at 100%. GitHub may delay timer
+events; configuration and a manual commissioning run do not prove a scheduled
+run occurred. No Mac, Codex session or browser login is needed. Unknown upload
+outcomes, rejection and policy warnings stop writes for inspection. Existing
+audience, rollout and identity stay unchanged.
 
 The controller has no CRM or LinkedIn access and does not run lead searches or
 modify any workspace data. Publication and installed-browser

@@ -4,28 +4,29 @@ import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { storeApi } from "./api.mjs";
 import { readRelease } from "./artifact.mjs";
-import { ITEM, PINNED_RELEASES, VERSION } from "./config.mjs";
+import { ITEM, PINNED_RELEASES, VERSION, releaseVersion } from "./config.mjs";
 import { finishReviewWatch } from "./finish-watch.mjs";
 import { publishRelease, releasePlan, snapshot } from "./lifecycle.mjs";
 import { privateStorage } from "./storage.mjs";
 
 export async function reconcile(
   command,
-  { api, storage, loadArtifact, finish = finishReviewWatch },
+  { api, storage, loadArtifact, finish = finishReviewWatch, version = VERSION },
 ) {
+  releaseVersion(`chrome-extension-v${version}`);
   if (!["doctor", "status", "plan", "publish"].includes(command))
     throw new Error("Unsupported release command.");
   const base = {
     itemId: ITEM,
     command,
-    version: VERSION,
-    sha256: PINNED_RELEASES[VERSION],
+    version,
+    sha256: PINNED_RELEASES[version],
     checkedAt: new Date().toISOString(),
   };
   const status = await api("fetchStatus");
   if (["doctor", "status"].includes(command))
     return { ...base, action: "status", ...snapshot(status) };
-  const plan = releasePlan(status, VERSION);
+  const plan = releasePlan(status, version);
   if (command === "plan") {
     await loadArtifact();
     return { ...base, ...plan };
@@ -34,7 +35,7 @@ export async function reconcile(
   if (
     Object.keys(previous).length &&
     (previous.itemId !== ITEM ||
-      previous.version !== VERSION ||
+      previous.version !== version ||
       previous.sha256 !== base.sha256)
   )
     throw new Error(
@@ -50,7 +51,7 @@ export async function reconcile(
     const release =
       plan.action === "upload"
         ? await loadArtifact()
-        : { version: VERSION, sha256: base.sha256 };
+        : { version, sha256: base.sha256 };
     const result = await publishRelease(api, release, {
       receipt: previous,
       save,
@@ -62,38 +63,75 @@ export async function reconcile(
   }
 }
 
+export async function reconcileRollout(
+  command,
+  { api, storageFor, loadArtifact, finish },
+  version = VERSION,
+) {
+  releaseVersion(`chrome-extension-v${version}`);
+  const options = (target) => ({
+    api,
+    storage: storageFor(target),
+    loadArtifact: () => loadArtifact(target),
+    finish,
+    version: target,
+  });
+  if (command === "publish" && version === VERSION) {
+    const observed = snapshot(await api("fetchStatus"));
+    // If Google's earlier approval was staged, finish that exact release first.
+    // Pending/rejected reviews remain untouched by the ordinary release planner.
+    if (
+      observed.submitted?.state === "STAGED" &&
+      observed.submitted.channels.length &&
+      observed.submitted.channels.every(
+        (channel) => channel.version === "1.2.1",
+      )
+    ) {
+      await reconcile("publish", options("1.2.1"));
+    }
+  }
+  return reconcile(command, options(version));
+}
+
 export async function main(command = process.argv[2]) {
   const token = process.env.CHROME_WEBSTORE_ACCESS_TOKEN;
   if (!token)
     throw new Error("A short-lived Google workload token is required.");
-  if (
-    process.env.STORE_RELEASE &&
-    process.env.STORE_RELEASE !== `chrome-extension-v${VERSION}`
-  )
-    throw new Error("This controller is pinned to the tested 1.2.1 release.");
-  const storage = privateStorage(token);
-  let temporary;
+  const version = releaseVersion(process.env.STORE_RELEASE || undefined);
+  const stores = new Map();
+  const storageFor = (target) => {
+    if (!stores.has(target))
+      stores.set(target, privateStorage(token, undefined, target));
+    return stores.get(target);
+  };
+  const temporary = [];
   try {
-    return await reconcile(command, {
-      api: storeApi(async () => token),
-      storage,
-      loadArtifact: async () => {
-        temporary = await mkdtemp(join(tmpdir(), "indiecrm-release-"));
-        const filename = `indiecrm-connect-${VERSION}.zip`;
-        await writeFile(
-          join(temporary, filename),
-          await storage.artifactBytes(),
-          { mode: 0o600 },
-        );
-        await writeFile(
-          join(temporary, filename + ".sha256"),
-          `${PINNED_RELEASES[VERSION]}  ${filename}\n`,
-        );
-        return readRelease(temporary, VERSION);
+    return await reconcileRollout(
+      command,
+      {
+        api: storeApi(async () => token),
+        storageFor,
+        loadArtifact: async (target) => {
+          const directory = await mkdtemp(join(tmpdir(), "indiecrm-release-"));
+          temporary.push(directory);
+          const filename = `indiecrm-connect-${target}.zip`;
+          await writeFile(
+            join(directory, filename),
+            await storageFor(target).artifactBytes(),
+            { mode: 0o600 },
+          );
+          await writeFile(
+            join(directory, filename + ".sha256"),
+            `${PINNED_RELEASES[target]}  ${filename}\n`,
+          );
+          return readRelease(directory, target);
+        },
       },
-    });
+      version,
+    );
   } finally {
-    if (temporary) await rm(temporary, { recursive: true, force: true });
+    for (const directory of temporary)
+      await rm(directory, { recursive: true, force: true });
   }
 }
 

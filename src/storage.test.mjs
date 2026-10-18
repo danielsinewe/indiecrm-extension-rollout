@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { BUCKET } from "./config.mjs";
+import { BUCKET, releaseVersion } from "./config.mjs";
 import { privateStorage, RECEIPT_OBJECT } from "./storage.mjs";
 
 const metadata = (generation) => ({
@@ -59,4 +59,42 @@ test("an absent receipt starts at generation zero, while competing writes stay r
     /HTTP 412/,
   );
   assert.match(calls[1], /ifGenerationMatch=0$/);
+});
+
+test("each pinned release uses its own private ZIP and generation-protected receipt", async () => {
+  for (const version of ["1.2.1", "1.2.2"]) {
+    const calls = [];
+    const storage = privateStorage(
+      "private-token",
+      async (url) => {
+        calls.push(url);
+        if (url.includes("uploadType"))
+          return json({
+            bucket: BUCKET,
+            name: `releases/${version}/receipt.json`,
+            generation: "1",
+          });
+        if (url.includes("alt=media")) return new Response("zip");
+        return json({}, 404);
+      },
+      version,
+    );
+    await storage.readReceipt();
+    await storage.saveReceipt({ version });
+    await storage.artifactBytes();
+    assert.ok(
+      calls.every((url) =>
+        decodeURIComponent(url).includes(`releases/${version}/`),
+      ),
+    );
+    assert.match(calls[1], /ifGenerationMatch=0$/);
+  }
+  for (const tag of [
+    "chrome-extension-v1.2.3",
+    "1.2.2",
+    "chrome-extension-v__proto__",
+    "chrome-extension-v1.2.2/other",
+  ]) {
+    assert.throws(() => releaseVersion(tag), /exact pinned/);
+  }
 });
