@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { ITEM, PINNED_RELEASES, REPOSITORY } from "./config.mjs";
 
-export const REVIEW_WORKFLOW = "watch.yml";
+export const REVIEW_WORKFLOW = "review-timer.yml";
 
 export function finishReviewWatch(
   receipt,
