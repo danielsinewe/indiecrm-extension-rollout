@@ -15,7 +15,7 @@ controller preserves pending reviews, resumes acknowledged progress and stops
 the scheduled watcher only after Google confirms 1.2.1 published at 100%.
 
 The controller has no CRM or LinkedIn access and does not run lead searches or
-modify either TracAI or bizforward data. Publication and installed-browser
+modify any workspace data. Publication and installed-browser
 verification remain separate steps.
 
 Run tests with `node --test src/*.test.mjs`. There are no package dependencies.
