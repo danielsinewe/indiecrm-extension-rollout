@@ -11,7 +11,7 @@ import { privateStorage } from "./storage.mjs";
 
 export async function reconcile(
   command,
-  { api, storage, loadArtifact, finish = finishReviewWatch, version = VERSION },
+  { api, storage, loadArtifact, finish = finishReviewWatch, version = VERSION, execution },
 ) {
   releaseVersion(`chrome-extension-v${version}`);
   if (!["doctor", "status", "plan", "publish"].includes(command))
@@ -22,6 +22,7 @@ export async function reconcile(
     version,
     sha256: PINNED_RELEASES[version],
     checkedAt: new Date().toISOString(),
+    ...(execution ? { execution } : {}),
   };
   const status = await api("fetchStatus");
   if (["doctor", "status"].includes(command))
@@ -53,10 +54,10 @@ export async function reconcile(
         ? await loadArtifact()
         : { version, sha256: base.sha256 };
     const result = await publishRelease(api, release, {
-      receipt: previous,
+      receipt: execution ? { ...previous, execution } : previous,
       save,
     });
-    return { ...current, ...result, reviewWatch: finish(current) };
+    return { ...current, ...result, reviewWatch: await finish(current) };
   } catch (error) {
     await save({ error: error.message }).catch(() => {});
     throw error;
@@ -65,7 +66,7 @@ export async function reconcile(
 
 export async function reconcileRollout(
   command,
-  { api, storageFor, loadArtifact, finish },
+  { api, storageFor, loadArtifact, finish, execution },
   version = VERSION,
 ) {
   releaseVersion(`chrome-extension-v${version}`);
@@ -75,6 +76,7 @@ export async function reconcileRollout(
     loadArtifact: () => loadArtifact(target),
     finish,
     version: target,
+    execution,
   });
   if (command === "publish" && version === VERSION) {
     const observed = snapshot(await api("fetchStatus"));
@@ -93,11 +95,11 @@ export async function reconcileRollout(
   return reconcile(command, options(version));
 }
 
-export async function main(command = process.argv[2]) {
-  const token = process.env.CHROME_WEBSTORE_ACCESS_TOKEN;
+export async function main(command = process.argv[2], runtime = {}) {
+  const token = runtime.accessToken ?? process.env.CHROME_WEBSTORE_ACCESS_TOKEN;
   if (!token)
     throw new Error("A short-lived Google workload token is required.");
-  const version = releaseVersion(process.env.STORE_RELEASE || undefined);
+  const version = releaseVersion(runtime.releaseTag ?? (process.env.STORE_RELEASE || undefined));
   const stores = new Map();
   const storageFor = (target) => {
     if (!stores.has(target))
@@ -111,6 +113,8 @@ export async function main(command = process.argv[2]) {
       {
         api: storeApi(async () => token),
         storageFor,
+        finish: runtime.finish,
+        execution: runtime.execution,
         loadArtifact: async (target) => {
           const directory = await mkdtemp(join(tmpdir(), "indiecrm-release-"));
           temporary.push(directory);
