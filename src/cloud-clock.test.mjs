@@ -82,3 +82,9 @@ test("Google project-number normalization identifies only the same pinned timer"
  for(const value of [JOB.replace("indiec-507107","other-project"),JOB.replace("indiecrm-chrome-review-15m","another-job")])
   assert.equal((await f.handler({...request,headers:{...request.headers,"x-cloudscheduler-jobname":value}})).status,403);
 });
+
+test("Google sends the exact short job name while IAM binds its project identity", async () => {
+ const f=fixture(async()=>receipt);
+ assert.equal((await f.handler({...request,headers:{...request.headers,"x-cloudscheduler-jobname":"indiecrm-chrome-review-15m"}})).status,200);
+ assert.equal((await f.handler({...request,headers:{...request.headers,"x-cloudscheduler-jobname":"another-job"}})).status,403);
+});

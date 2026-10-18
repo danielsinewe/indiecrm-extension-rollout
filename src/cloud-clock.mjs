@@ -20,13 +20,13 @@ export function scheduledReview({ fetcher = fetch, run = main, log = console.log
       return { status: 200, body: { controller: "indiecrm-chrome-review", version: VERSION } };
     const scheduledTime = headers["x-cloudscheduler-scheduletime"];
     const receivedJob = headers["x-cloudscheduler-jobname"];
-    const acceptedJobs = new Set([JOB, JOB.replace("projects/" + PROJECT + "/", "projects/987262795252/")]);
+    const acceptedJobs = new Set([JOB, JOB.replace("projects/" + PROJECT + "/", "projects/987262795252/"), "indiecrm-chrome-review-15m"]);
     if (method !== "POST" || path !== "/review" ||
         !acceptedJobs.has(receivedJob) ||
         typeof scheduledTime !== "string" || !Number.isFinite(Date.parse(scheduledTime))) {
       log(JSON.stringify({
         event: "indiecrm_scheduled_request_rejected", method,
-        schedulerJob: typeof receivedJob === "string" && receivedJob.startsWith("projects/") ? receivedJob.slice(0, 200) : "[missing or invalid]",
+        schedulerJob: typeof receivedJob === "string" ? receivedJob.slice(0, 200) : "[missing or invalid]",
         scheduledTime: typeof scheduledTime === "string" && Number.isFinite(Date.parse(scheduledTime)) ? scheduledTime : "[missing or invalid]",
         schedulerHeaderNames: Object.keys(headers).filter((name) => name.includes("cloudscheduler")),
       }));
