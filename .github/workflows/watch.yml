@@ -2,7 +2,7 @@ name: Watch IndieCRM Connect 1.2.1 review
 run-name: Chrome review watch · ${{ github.event_name }} · ${{ github.run_id }}
 on:
   schedule:
-    - cron: "23 * * * *"
+    - cron: "38 * * * *"
   workflow_dispatch:
 permissions:
   contents: read
