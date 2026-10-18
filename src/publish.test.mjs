@@ -186,6 +186,94 @@ test("a staged target publishes without replacing its package; another staged ve
   }
 });
 
+test("an identified async upload waits for Google processing before submission", async () => {
+  const f = fixture();
+  let uploads = 0;
+  let checks = 0;
+  let submitted = false;
+  const api = async (action, bytes) => {
+    if (action === "upload") {
+      uploads++;
+      return { name: NAME, itemId: ITEM, uploadState: "IN_PROGRESS" };
+    }
+    if (action === "fetchStatus" && uploads && !submitted) {
+      f.change({
+        ...initial(),
+        lastAsyncUploadState: ++checks === 1 ? "IN_PROGRESS" : "SUCCEEDED",
+      });
+    }
+    if (action === "publish") {
+      assert.ok(
+        f.saved.some((saved) => saved.uploaded && saved.uploadAccepted),
+      );
+      submitted = true;
+    }
+    return f.api(action, bytes);
+  };
+  const result = await publishRelease(api, release, {
+    ...f,
+    wait: async () => {},
+  });
+  assert.equal(result.action, "submitted");
+  assert.equal(uploads, 1);
+  assert.equal(f.calls.filter((action) => action === "publish").length, 1);
+  assert.ok(f.saved.some((saved) => saved.uploadAccepted && !saved.uploaded));
+});
+
+test("an accepted async upload survives a new process without another package upload", async () => {
+  const f = fixture();
+  let uploads = 0;
+  const api = async (action, bytes) => {
+    if (action === "upload") {
+      uploads++;
+      f.change({ ...initial(), lastAsyncUploadState: "IN_PROGRESS" });
+      return { name: NAME, itemId: ITEM, uploadState: "UPLOAD_IN_PROGRESS" };
+    }
+    return f.api(action, bytes);
+  };
+  const waiting = await publishRelease(api, release, {
+    ...f,
+    wait: async () => {},
+  });
+  assert.equal(waiting.action, "waiting_upload");
+  assert.equal(waiting.uploadAccepted, true);
+  assert.equal(waiting.uploaded, false);
+  f.change({ ...initial(), lastAsyncUploadState: "SUCCEEDED" });
+  const result = await publishRelease(api, release, {
+    ...f,
+    receipt: f.saved.at(-1),
+    wait: async () => {},
+  });
+  assert.equal(result.action, "submitted");
+  assert.equal(uploads, 1);
+});
+
+test("async acknowledgments cannot hide changed bytes or a lost/failed Google upload", async () => {
+  for (const change of [
+    { sha256: "other-bytes", state: "SUCCEEDED" },
+    { sha256: release.sha256, state: null },
+    { sha256: release.sha256, state: "FAILED" },
+  ]) {
+    const f = fixture({ ...initial(), lastAsyncUploadState: change.state });
+    await assert.rejects(
+      publishRelease(f.api, release, {
+        ...f,
+        receipt: {
+          itemId: ITEM,
+          version: release.version,
+          sha256: change.sha256,
+          uploadAttempted: true,
+          uploadAccepted: true,
+          uploaded: false,
+        },
+      }),
+      /different bytes|not confirmed/,
+    );
+    assert.equal(f.calls.includes("upload"), false);
+    assert.equal(f.calls.includes("publish"), false);
+  }
+});
+
 test("newer versions, policy flags, rejected revisions and wrong item identities fail closed", () => {
   const cases = [
     { ...initial(), itemId: "another-item" },

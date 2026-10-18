@@ -79,7 +79,11 @@ export function releasePlan(status, version) {
 export async function publishRelease(
   api,
   release,
-  { receipt = {}, save = async () => {} } = {},
+  {
+    receipt = {},
+    save = async () => {},
+    wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  } = {},
 ) {
   const before = await api("fetchStatus");
   const plan = releasePlan(before, release.version);
@@ -92,6 +96,49 @@ export async function publishRelease(
     checkedAt: new Date().toISOString(),
     ...plan,
   };
+  const confirmAcceptedUpload = async (state) => {
+    for (
+      let attempt = 0;
+      ["IN_PROGRESS", "UPLOAD_IN_PROGRESS"].includes(state);
+      attempt++
+    ) {
+      if (attempt === 6) return false;
+      if (attempt) await wait(5000);
+      state = snapshot(await api("fetchStatus")).uploadState;
+    }
+    if (state !== "SUCCEEDED")
+      throw new Error(
+        "Google has not confirmed the accepted async upload. Its checkpoint was preserved.",
+      );
+    receipt = { ...receipt, uploaded: true };
+    Object.assign(result, {
+      uploaded: true,
+      uploadAccepted: true,
+      uploadAttempted: true,
+    });
+    await save({ ...result, action: "uploaded" });
+    return true;
+  };
+  if (
+    receipt.uploadAccepted &&
+    !receipt.uploaded &&
+    ["upload", "waiting_upload"].includes(plan.action)
+  ) {
+    if (
+      receipt.itemId !== ITEM ||
+      receipt.version !== release.version ||
+      receipt.sha256 !== release.sha256
+    )
+      throw new Error(
+        "The accepted upload checkpoint belongs to different bytes. No submission is safe.",
+      );
+    if (!(await confirmAcceptedUpload(plan.uploadState))) {
+      const waiting = { ...result, action: "waiting_upload" };
+      await save(waiting);
+      return waiting;
+    }
+    plan.action = "upload";
+  }
   if (
     [
       "published",
@@ -128,18 +175,37 @@ export async function publishRelease(
       });
       const upload = await api("upload", release.bytes);
       if (
-        upload.uploadState !== "SUCCEEDED" ||
-        upload.crxVersion !== release.version
-      )
-        throw new Error(
-          "Google has not confirmed the uploaded version. Check the stored receipt and upload status before retrying.",
-        );
-      await save({
-        ...result,
-        action: "uploaded",
-        uploadAttempted: true,
-        uploaded: true,
-      });
+        ["IN_PROGRESS", "UPLOAD_IN_PROGRESS"].includes(upload.uploadState) &&
+        upload.name === NAME &&
+        upload.itemId === ITEM &&
+        (!upload.crxVersion || upload.crxVersion === release.version)
+      ) {
+        Object.assign(result, {
+          uploadAccepted: true,
+          uploadAttempted: true,
+          uploaded: false,
+        });
+        await save({ ...result, action: "waiting_upload" });
+        if (!(await confirmAcceptedUpload(upload.uploadState))) {
+          const waiting = { ...result, action: "waiting_upload" };
+          await save(waiting);
+          return waiting;
+        }
+      } else {
+        if (
+          upload.uploadState !== "SUCCEEDED" ||
+          upload.crxVersion !== release.version
+        )
+          throw new Error(
+            "Google has not confirmed the uploaded version. Check the stored receipt and upload status before retrying.",
+          );
+        await save({
+          ...result,
+          action: "uploaded",
+          uploadAttempted: true,
+          uploaded: true,
+        });
+      }
     }
   }
   const latest = await api("fetchStatus");
