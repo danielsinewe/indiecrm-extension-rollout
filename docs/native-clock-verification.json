@@ -1,0 +1,85 @@
+{
+  "verifiedAt": "2026-10-18T13:14:28.299Z",
+  "result": "successful_real_scheduled_run",
+  "scheduler": "Google Cloud Scheduler",
+  "job": "projects/indiec-507107/locations/us-central1/jobs/indiecrm-chrome-review-15m",
+  "scheduleUtc": "13,28,43,58 * * * *",
+  "timeZone": "Etc/UTC",
+  "scheduledAt": "2026-10-18T13:13:00.866748Z",
+  "scheduledAtBerlin": "2026-10-18 15:13:00 Europe/Berlin",
+  "httpStatus": 200,
+  "controllerRevision": "indiecrm-chrome-review-00003-cr9",
+  "execution": {
+    "trigger": "schedule",
+    "scheduler": "google-cloud-scheduler",
+    "schedulerJob": "projects/indiec-507107/locations/us-central1/jobs/indiecrm-chrome-review-15m",
+    "receivedSchedulerJob": "indiecrm-chrome-review-15m",
+    "scheduledTime": "2026-10-18T06:13:00-07:00",
+    "receivedAt": "2026-10-18T13:13:01.208Z",
+    "runtime": "google-cloud-run",
+    "revision": "indiecrm-chrome-review-00003-cr9"
+  },
+  "sourceCommit": "04f9973f573676d42f754a7082c4619fae3fcf9c",
+  "image": "us-central1-docker.pkg.dev/indiec-507107/indiecrm-chrome-review/controller@sha256:638c6c57eb17e6ac5c873edbd8280536561cbdd5c6644fc2509d24b58cfeb17c",
+  "ciRun": "https://github.com/danielsinewe/indiecrm-extension-rollout/actions/runs/39130262609",
+  "testsPassed": 36,
+  "receipt": {
+    "itemId": "eiabmmajcanapfaphkammeieoiagmifc",
+    "version": "1.2.2",
+    "sha256": "1dd619b2af08e236d1bddb0462bc778073a99ec8d0944e14b9452f418c44613b",
+    "action": "published",
+    "published": {
+      "state": "PUBLISHED",
+      "channels": [
+        {
+          "version": "1.2.2",
+          "deployPercentage": 100
+        }
+      ]
+    },
+    "submitted": null,
+    "checkedAt": "2026-10-18T13:13:09.820Z"
+  },
+  "schedulerStateAfterCompletion": "PAUSED",
+  "automaticStopVerified": true,
+  "manualRunRequested": false,
+  "macRequired": false,
+  "codexRequired": false,
+  "googleBrowserSessionRequired": false,
+  "longLivedPrivateKeysCreated": 0,
+  "paidUpgradeAdded": false,
+  "actionsBudgetIncreased": false,
+  "crmRequests": 0,
+  "crmDataMutations": 0,
+  "workspacePermissionsChanged": false,
+  "sourceIsolation": "Release controller has no CRM or LinkedIn credentials; original extension ZIPs and per-version progress stay in the separate private release bucket.",
+  "executionEvidence": [
+    {
+      "timestamp": "2026-10-18T13:13:09.966925110Z",
+      "type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptStarted",
+      "insertId": "1q7tf84fj207kq",
+      "logName": "projects/indiec-507107/logs/cloudscheduler.googleapis.com%2Fexecutions"
+    },
+    {
+      "timestamp": "2026-10-18T13:13:19.914491888Z",
+      "type": "type.googleapis.com/google.cloud.scheduler.logging.AttemptFinished",
+      "httpStatus": 200,
+      "insertId": "r7woxbfiheq9b",
+      "logName": "projects/indiec-507107/logs/cloudscheduler.googleapis.com%2Fexecutions"
+    }
+  ],
+  "correction": "Google sends the short job name. The controller accepts only this exact short name or its equivalent canonical resource identities, behind the dedicated invoker IAM binding.",
+  "resourceBounds": {
+    "region": "us-central1",
+    "minInstances": 0,
+    "maxInstances": 1,
+    "cpu": 0.08,
+    "memoryMiB": 256,
+    "requestTimeoutSeconds": 180,
+    "retryCount": 0
+  },
+  "freeAllowanceReferences": [
+    "https://cloud.google.com/scheduler/pricing",
+    "https://cloud.google.com/run/pricing"
+  ]
+}

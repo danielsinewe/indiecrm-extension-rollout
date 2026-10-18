@@ -1,36 +1,29 @@
 # IndieCRM Connect release automation
 
-This repository contains only the Chrome Web Store release controller and its
-tests. It contains no IndieCRM application source, CRM data, extension ZIPs,
-Google passwords, API keys or service-account private keys.
+Google Cloud Scheduler calls the IAM-protected Cloud Run controller every
+15 minutes, independently of Codex, the Mac and Google browser sessions.
 
-Standard public GitHub Actions runners run the controller without consuming the
-private application repository's Actions allowance. Google authentication uses
-short-lived GitHub workload identity, restricted to this repository's numeric
-identity and the release workflow on `main`.
+[The real scheduled run is verified](docs/native-clock-verification.md):
+at 15:13 Berlin on 18 October 2026 it returned HTTP 200, confirmed 1.2.2
+published at 100%, saved matching private progress and paused itself.
+The timer is intentionally PAUSED after this completed rollout.
 
-The original tested 1.2.1 and 1.2.2 ZIPs and separate progress receipts live in a
-private Google Cloud Storage bucket. Every upload verifies its pinned SHA-256
-and manifest. The controller preserves the pending 1.2.1 review, then submits the
-exact 1.2.2 ZIP when Google permits it. An approved staged 1.2.1 is published
-before advancing. Submissions use DEFAULT_PUBLISH so Google publishes each
-approved release automatically.
+The clock uses Google-managed identity and short-lived publisher tokens.
+The service has zero idle instances, a single-instance maximum, request billing,
+0.08 CPU, 256 MiB and a 180-second request limit. No paid plan or Actions budget
+increase was added; this bounded workload uses Google Cloud free allowances.
 
-The hosted watcher checks every 15 minutes, resumes acknowledged progress and
-stops only after Google confirms 1.2.2 published at 100%. GitHub may delay timer
-events; configuration and a manual commissioning run do not prove a scheduled
-run occurred. No Mac, Codex session or browser login is needed. Unknown upload
-outcomes, rejection and policy warnings stop writes for inspection. Existing
-audience, rollout and identity stay unchanged.
+The legacy GitHub review timer is disabled. store.yml remains available for
+the existing on-demand CLI with its repository-scoped workload identity.
 
-The controller has no CRM or LinkedIn access and does not run lead searches or
-modify any workspace data. Publication and installed-browser
-verification remain separate steps.
+The original 1.2.1 and 1.2.2 ZIPs and per-version generation-protected receipts
+remain in the private release bucket. Exact checksum, manifest, publisher and
+item guards preserve reviews and prevent unchecked replacement or duplication.
+DEFAULT_PUBLISH lets Google publish each approved submission automatically.
 
-`review-timer.yml` requests a scheduled check at minutes 08, 23, 38 and 53 UTC.
-It dispatches `store.yml` with `review-timer-<parent run ID>` as its correlation.
-The timer's first successful `schedule` event and the matching publisher result
-must be verified separately from manual `workflow_dispatch` runs. The retired
-`watch.yml` registration is disabled and removed.
+This repository contains release-controller code, tests and operational evidence.
+It contains no private application source, extension ZIPs, CRM data, LinkedIn
+credentials, Google passwords or service-account private keys. The controller
+has no CRM access and does not change workspace permissions or lead data.
 
-Run tests with `node --test src/*.test.mjs`. There are no package dependencies.
+Run checks with node --test src/*.test.mjs. There are no package dependencies.
