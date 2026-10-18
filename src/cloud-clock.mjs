@@ -19,13 +19,22 @@ export function scheduledReview({ fetcher = fetch, run = main, log = console.log
     if (method === "GET" && path === "/")
       return { status: 200, body: { controller: "indiecrm-chrome-review", version: VERSION } };
     const scheduledTime = headers["x-cloudscheduler-scheduletime"];
+    const receivedJob = headers["x-cloudscheduler-jobname"];
+    const acceptedJobs = new Set([JOB, JOB.replace("projects/" + PROJECT + "/", "projects/987262795252/")]);
     if (method !== "POST" || path !== "/review" ||
-        headers["x-cloudscheduler-jobname"] !== JOB ||
-        typeof scheduledTime !== "string" || !Number.isFinite(Date.parse(scheduledTime)))
+        !acceptedJobs.has(receivedJob) ||
+        typeof scheduledTime !== "string" || !Number.isFinite(Date.parse(scheduledTime))) {
+      log(JSON.stringify({
+        event: "indiecrm_scheduled_request_rejected", method,
+        schedulerJob: typeof receivedJob === "string" && receivedJob.startsWith("projects/") ? receivedJob.slice(0, 200) : "[missing or invalid]",
+        scheduledTime: typeof scheduledTime === "string" && Number.isFinite(Date.parse(scheduledTime)) ? scheduledTime : "[missing or invalid]",
+        schedulerHeaderNames: Object.keys(headers).filter((name) => name.includes("cloudscheduler")),
+      }));
       return { status: 403, body: { error: "An authenticated request from the pinned cloud timer is required." } };
+    }
 
     const execution = {
-      trigger: "schedule", scheduler: "google-cloud-scheduler", schedulerJob: JOB,
+      trigger: "schedule", scheduler: "google-cloud-scheduler", schedulerJob: JOB, receivedSchedulerJob: receivedJob,
       scheduledTime, receivedAt: new Date().toISOString(), runtime: "google-cloud-run",
       revision: process.env.K_REVISION ?? "local-test",
     };

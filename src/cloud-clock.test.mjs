@@ -75,3 +75,10 @@ test("a new cloud tick replaces stale execution metadata while preserving releas
   assert.deepEqual(saved.execution, execution);
   assert.deepEqual(result.execution, execution);
 });
+
+test("Google project-number normalization identifies only the same pinned timer", async () => {
+ const f=fixture(async()=>receipt);
+ assert.equal((await f.handler({...request,headers:{...request.headers,"x-cloudscheduler-jobname":JOB.replace("projects/indiec-507107/","projects/987262795252/")}})).status,200);
+ for(const value of [JOB.replace("indiec-507107","other-project"),JOB.replace("indiecrm-chrome-review-15m","another-job")])
+  assert.equal((await f.handler({...request,headers:{...request.headers,"x-cloudscheduler-jobname":value}})).status,403);
+});
