@@ -12,7 +12,7 @@ identity and the release workflow on `main`.
 The original tested 1.2.1 ZIP and progress receipt live in a private Google Cloud
 Storage bucket. Every upload verifies its pinned SHA-256 and manifest. The
 controller preserves pending reviews, resumes acknowledged progress and stops
-the hourly watcher only after Google confirms 1.2.1 published at 100%.
+the scheduled watcher only after Google confirms 1.2.1 published at 100%.
 
 The controller has no CRM or LinkedIn access and does not run lead searches or
 modify either TracAI or bizforward data. Publication and installed-browser
