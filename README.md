@@ -27,4 +27,10 @@ The controller has no CRM or LinkedIn access and does not run lead searches or
 modify any workspace data. Publication and installed-browser
 verification remain separate steps.
 
+`review-timer.yml` requests a scheduled check at minutes 08, 23, 38 and 53 UTC.
+It dispatches `store.yml` with `review-timer-<parent run ID>` as its correlation.
+The timer's first successful `schedule` event and the matching publisher result
+must be verified separately from manual `workflow_dispatch` runs. The retired
+`watch.yml` registration is disabled and removed.
+
 Run tests with `node --test src/*.test.mjs`. There are no package dependencies.

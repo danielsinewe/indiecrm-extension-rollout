@@ -43,7 +43,7 @@ test("fresh target publication disables only its dedicated scheduler and preserv
       "api",
       "--method",
       "PUT",
-      "repos/danielsinewe/indiecrm-extension-rollout/actions/workflows/watch.yml/disable",
+      "repos/danielsinewe/indiecrm-extension-rollout/actions/workflows/review-timer.yml/disable",
     ],
   ]);
 });

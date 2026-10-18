@@ -1,9 +1,9 @@
-name: Watch IndieCRM Connect 1.2.2 rollout
-run-name: Chrome review watch · ${{ github.event_name }} · ${{ github.run_id }}
+name: Automatic 15-minute IndieCRM 1.2.2 rollout
+run-name: Chrome review timer · ${{ github.event_name }} · ${{ github.run_id }}
 on:
   schedule:
     # Every 15 minutes at 08, 23, 38 and 53 UTC.
-    - cron: "8/15 * * * *"
+    - cron: "8,23,38,53 * * * *"
   workflow_dispatch:
 permissions:
   contents: read
@@ -23,5 +23,5 @@ jobs:
         run: |
           gh workflow run store.yml --repo danielsinewe/indiecrm-extension-rollout --ref main \
             -f command=publish -f release_tag=chrome-extension-v1.2.2 \
-            -f "request_id=review-watch-$GITHUB_RUN_ID"
+            -f "request_id=review-timer-$GITHUB_RUN_ID"
           echo 'Queued the pinned 1.2.2 release; preserve the 1.2.1 review and publish each approved release.' >> "$GITHUB_STEP_SUMMARY"
