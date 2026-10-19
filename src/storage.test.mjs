@@ -62,7 +62,7 @@ test("an absent receipt starts at generation zero, while competing writes stay r
 });
 
 test("each pinned release uses its own private ZIP and generation-protected receipt", async () => {
-  for (const version of ["1.2.1", "1.2.2"]) {
+  for (const version of ["1.2.1", "1.2.2", "1.2.3"]) {
     const calls = [];
     const storage = privateStorage(
       "private-token",
@@ -90,7 +90,7 @@ test("each pinned release uses its own private ZIP and generation-protected rece
     assert.match(calls[1], /ifGenerationMatch=0$/);
   }
   for (const tag of [
-    "chrome-extension-v1.2.3",
+    "chrome-extension-v1.2.4",
     "1.2.2",
     "chrome-extension-v__proto__",
     "chrome-extension-v1.2.2/other",
