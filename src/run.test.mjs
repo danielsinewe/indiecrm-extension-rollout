@@ -121,7 +121,7 @@ test("another item's checkpoint and failed pre-upload persistence prevent Store 
   }
 });
 
-test("the cloud chain waits for 1.2.1, submits 1.2.2 once, and stops only after final publication", async () => {
+test("the cloud chain waits for a predecessor, submits the target once, and stops only after final publication", async () => {
   let current = {
     ...status(),
     submittedItemRevisionStatus: revision("1.2.1", "PENDING_REVIEW"),
@@ -203,10 +203,10 @@ test("the cloud chain waits for 1.2.1, submits 1.2.2 once, and stops only after 
   assert.equal(receipts.get(VERSION).sha256, PINNED_RELEASES[VERSION]);
 });
 
-test("an approved staged predecessor publishes before the target and keeps separate pinned checkpoints", async () => {
+for (const predecessor of ["1.2.1", "1.2.4"]) test(`approved staged ${predecessor} publishes before the target and keeps separate pinned checkpoints`, async () => {
   let current = {
     ...status(),
-    submittedItemRevisionStatus: revision("1.2.1", "STAGED"),
+    submittedItemRevisionStatus: revision(predecessor, "STAGED"),
   };
   const operations = [],
     receipts = new Map();
@@ -221,7 +221,7 @@ test("an approved staged predecessor publishes before the target and keeps separ
           current.submittedItemRevisionStatus?.state === "STAGED"
             ? {
                 ...status(),
-                publishedItemRevisionStatus: revision("1.2.1", "PUBLISHED"),
+                publishedItemRevisionStatus: revision(predecessor, "PUBLISHED"),
               }
             : {
                 ...current,
@@ -250,8 +250,21 @@ test("an approved staged predecessor publishes before the target and keeps separ
   });
   assert.equal(result.action, "submitted");
   assert.deepEqual(operations, ["publish", "upload", "publish"]);
-  for (const version of ["1.2.1", VERSION]) {
+  for (const version of [predecessor, VERSION]) {
     assert.equal(receipts.get(version).version, version);
     assert.equal(receipts.get(version).sha256, PINNED_RELEASES[version]);
   }
+});
+
+test("an unidentified staged predecessor remains held without any Store write", async () => {
+  const current = { ...status(), submittedItemRevisionStatus: revision("1.2.9", "STAGED") };
+  let saved;
+  const result = await reconcileRollout("publish", {
+    api: async (action) => { assert.equal(action, "fetchStatus"); return current; },
+    storageFor: () => ({ readReceipt: async () => ({}), saveReceipt: async (next) => { saved = next; } }),
+    loadArtifact: () => assert.fail("An unknown staged revision cannot be replaced"),
+    finish: () => ({ action: "watching" }),
+  });
+  assert.equal(result.action, "waiting_other_staged_release");
+  assert.equal(saved.version, VERSION);
 });

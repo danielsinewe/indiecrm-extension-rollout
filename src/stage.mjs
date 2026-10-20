@@ -17,8 +17,8 @@ export async function stageRelease({
   fetcher = fetch,
 }) {
   releaseVersion(`chrome-extension-v${version}`);
-  if (version !== "1.2.3")
-    throw new Error("This staging handoff is pinned to 1.2.3.");
+  if (!["1.2.3", "1.3.1"].includes(version))
+    throw new Error("This staging handoff requires an authorized pinned artifact.");
   let url;
   try {
     url = new URL(downloadUrl);

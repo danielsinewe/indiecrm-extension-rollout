@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { storeApi } from "./api.mjs";
 import { readRelease } from "./artifact.mjs";
-import { ITEM, PINNED_RELEASES, VERSION, releaseVersion } from "./config.mjs";
+import { ITEM, PINNED_RELEASES, VERSION, compareVersions, releaseVersion } from "./config.mjs";
 import { finishReviewWatch } from "./finish-watch.mjs";
 import { publishRelease, releasePlan, snapshot } from "./lifecycle.mjs";
 import { privateStorage } from "./storage.mjs";
@@ -80,16 +80,19 @@ export async function reconcileRollout(
   });
   if (command === "publish" && version === VERSION) {
     const observed = snapshot(await api("fetchStatus"));
+    const predecessor = observed.submitted?.channels[0]?.version;
     // If Google's earlier approval was staged, finish that exact release first.
     // Pending/rejected reviews remain untouched by the ordinary release planner.
     if (
       observed.submitted?.state === "STAGED" &&
       observed.submitted.channels.length &&
+      Object.hasOwn(PINNED_RELEASES, predecessor) &&
+      compareVersions(predecessor, version) < 0 &&
       observed.submitted.channels.every(
-        (channel) => channel.version === "1.2.1",
+        (channel) => channel.version === predecessor,
       )
     ) {
-      await reconcile("publish", options("1.2.1"));
+      await reconcile("publish", options(predecessor));
     }
   }
   return reconcile(command, options(version));

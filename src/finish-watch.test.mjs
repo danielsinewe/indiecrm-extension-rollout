@@ -1,19 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ITEM, PINNED_RELEASES } from "./config.mjs";
+import { ITEM, PINNED_RELEASES, VERSION } from "./config.mjs";
 import { finishReviewWatch } from "./finish-watch.mjs";
 
 const now = Date.parse("2026-10-18T09:15:00Z");
 const target = {
   itemId: ITEM,
   command: "publish",
-  version: "1.2.2",
-  sha256: PINNED_RELEASES["1.2.2"],
+  version: VERSION,
+  sha256: PINNED_RELEASES[VERSION],
   action: "published",
   checkedAt: new Date(now).toISOString(),
   published: {
     state: "PUBLISHED",
-    channels: [{ version: "1.2.2", deployPercentage: 100 }],
+    channels: [{ version: VERSION, deployPercentage: 100 }],
   },
 };
 
@@ -48,7 +48,7 @@ test("fresh target publication disables only its dedicated scheduler and preserv
   ]);
 });
 
-test("publishing 1.2.1 cannot stop the watcher before 1.2.2 is published", () => {
+test("publishing a predecessor cannot stop the watcher before the final target is published", () => {
   const result = finishReviewWatch(
     {
       ...target,
@@ -76,18 +76,18 @@ test("another item, different bytes, stale receipt and unverified publication ca
     { error: "Publication failed" },
     { warned: true },
     { takenDown: true },
-    { published: { state: "STAGED", channels: [{ version: "1.2.2" }] } },
+    { published: { state: "STAGED", channels: [{ version: VERSION }] } },
     { published: { state: "PUBLISHED", channels: [{ version: "1.2.0" }] } },
     {
       published: {
         state: "PUBLISHED",
-        channels: [{ version: "1.2.2", deployPercentage: 10 }],
+        channels: [{ version: VERSION, deployPercentage: 10 }],
       },
     },
     {
       published: {
         state: "PUBLISHED_TO_TESTERS",
-        channels: [{ version: "1.2.2" }],
+        channels: [{ version: VERSION }],
       },
     },
   ]) {
