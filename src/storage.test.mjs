@@ -90,7 +90,7 @@ test("each pinned release uses its own private ZIP and generation-protected rece
     assert.match(calls[1], /ifGenerationMatch=0$/);
   }
   for (const tag of [
-    "chrome-extension-v1.3.3",
+    "chrome-extension-v1.3.4",
     "1.2.2",
     "chrome-extension-v__proto__",
     "chrome-extension-v1.2.2/other",

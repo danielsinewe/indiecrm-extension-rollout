@@ -1,6 +1,6 @@
 export const REPOSITORY = "danielsinewe/indiecrm-extension-rollout";
 export const BUCKET = "indiec-507107-chrome-releases";
-export const VERSION = "1.3.2";
+export const VERSION = "1.3.3";
 export const PUBLISHER = "bc8a3569-1d50-4414-a27f-ca85f54678cd";
 export const ITEM = "eiabmmajcanapfaphkammeieoiagmifc";
 export const NAME = `publishers/${PUBLISHER}/items/${ITEM}`;
@@ -12,6 +12,7 @@ export const PINNED_RELEASES = {
   "1.2.4": "5c4898d9516a7d5ae5ce8e141afd7903489eaea80395109d1e09b39dcc1952b1",
   "1.3.1": "b4524e33e6c235a989afdf36ef94dd1222e75d4c130b4cc0186672f7828ad807",
   "1.3.2": "1196cd86d3d30e1ea39f40a07fd010a0d209235eae99985ec2487ce83a904fb8",
+  "1.3.3": "d4184019682d5c1ee6d80910ad4d64faf2f2778808b0ff6429536d46b239f354",
 };
 
 export function releaseVersion(tag = `chrome-extension-v${VERSION}`) {
