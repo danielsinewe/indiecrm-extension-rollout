@@ -23,6 +23,12 @@ export function continueReviewClock({
     return { action: "stopped", reason: "Clock disabled or superseded" };
   if (!/^[a-zA-Z0-9-]{1,80}$/.test(generation) || !/^\d+$/.test(runId ?? ""))
     throw new Error("Invalid clock generation or workflow run.");
+  const environment = JSON.parse(run([
+    "api", `repos/${REPOSITORY}/environments/chrome-review-delay`,
+  ]));
+  const delay = environment.protection_rules?.find(rule => rule.type === "wait_timer")?.wait_timer;
+  if (environment.name !== "chrome-review-delay" || !Number.isInteger(delay) || delay < 1 || delay > 60)
+    throw new Error("The cloud wait timer must be configured before queueing another check.");
   const state = () => run([
     "api", `repos/${REPOSITORY}/actions/workflows/${REVIEW_WORKFLOW}`,
     "--jq", ".state",

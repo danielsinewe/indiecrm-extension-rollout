@@ -7,9 +7,11 @@ const valid = {
   repository: REPOSITORY, ref: "refs/heads/main", enabled: "true",
   generation: "release-1-3-3-20261020", expectedGeneration: "release-1-3-3-20261020", runId: "12345",
 };
-const harness = (states = ["active", "active"]) => {
+const harness = (states = ["active", "active"], delay = 15) => {
   const calls = [];
-  return { calls, run: args => { calls.push(args); return args[0] === "api" ? states.shift() : ""; } };
+  return { calls, run: args => { calls.push(args); return args[1]?.includes("/environments/")
+    ? JSON.stringify({ name: "chrome-review-delay", protection_rules: [{ type: "wait_timer", wait_timer: delay }] })
+    : args[0] === "api" ? states.shift() : ""; } };
 };
 test("one delayed check queues the pinned publisher and exactly one successor", () => {
   const h = harness();
@@ -48,7 +50,16 @@ test("publication completing during dispatch prevents the next check", () => {
 test("an unacknowledged publisher dispatch fails without claiming a successor", () => {
   const calls = [];
   assert.throws(() => continueReviewClock({ ...valid, run: args => {
-    calls.push(args); if (args[0] === "api") return "active"; throw new Error("GitHub unavailable");
+    calls.push(args);
+    if (args[1]?.includes("/environments/")) return JSON.stringify({ name: "chrome-review-delay", protection_rules: [{ type: "wait_timer", wait_timer: 15 }] });
+    if (args[0] === "api") return "active"; throw new Error("GitHub unavailable");
   } }), /GitHub unavailable/);
   assert.equal(calls.filter(c => c.includes("review-timer.yml") && c[0] === "workflow").length, 0);
+});
+test("a missing, zero or excessive delay cannot create a rapid dispatch loop", () => {
+  for (const delay of [undefined, null, 0, 61, "15"]) {
+    const h = harness(["active", "active"], delay === undefined ? null : delay);
+    assert.throws(() => continueReviewClock({ ...valid, run: h.run }), /wait timer/);
+    assert.equal(h.calls.filter(c => c[0] === "workflow").length, 0);
+  }
 });
