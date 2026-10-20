@@ -358,7 +358,7 @@ async function releaseFixture(t, overrides = {}) {
     join(tmpdir(), "indiecrm-extension-artifact-"),
   );
   t.after(() => rm(directory, { recursive: true, force: true }));
-  const version = "1.3.2",
+  const version = "1.3.3",
     filename = `indiecrm-connect-${version}.zip`;
   await writeFile(
     join(directory, "manifest.json"),
@@ -391,7 +391,7 @@ test("the release loader reads the packaged manifest and never rebuilds an exist
 test("a valid checksum cannot disguise the wrong extension or version", async (t) => {
   for (const overrides of [
     { name: "Different extension" },
-    { version: "1.3.3" },
+    { version: "1.3.4" },
   ]) {
     const f = await releaseFixture(t, overrides);
     await assert.rejects(

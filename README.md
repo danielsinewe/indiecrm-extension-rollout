@@ -1,11 +1,11 @@
 # IndieCRM Connect release automation
 
-The current target is **1.3.1**, pinned to the exact tested GitHub release ZIP
-with SHA-256 `b4524e33e6c235a989afdf36ef94dd1222e75d4c130b4cc0186672f7828ad807`.
+The current target is **1.3.2**, pinned to the exact tested GitHub release ZIP
+with SHA-256 `1196cd86d3d30e1ea39f40a07fd010a0d209235eae99985ec2487ce83a904fb8`.
 The existing GitHub `review-timer.yml` workflow checks every 15 minutes and
 dispatches the keyless publisher on free public runners. It waits for pending
 reviews, submits the target once the preceding review clears, and disables only
-its own timer after fresh Google proof that 1.3.1 is published at 100%.
+its own timer after fresh Google proof that 1.3.2 is published at 100%.
 It runs independently of Codex, the Mac and Google browser sessions.
 
 The artifact is staged in the existing private Google Storage bucket with

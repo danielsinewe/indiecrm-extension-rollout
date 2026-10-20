@@ -1,4 +1,4 @@
-name: Automatic 15-minute IndieCRM 1.3.1 rollout
+name: Automatic 15-minute IndieCRM 1.3.2 rollout
 run-name: Chrome review timer · ${{ github.event_name }} · ${{ github.run_id }}
 on:
   schedule:
@@ -22,6 +22,6 @@ jobs:
       - name: Queue the isolated keyless publisher
         run: |
           gh workflow run store.yml --repo danielsinewe/indiecrm-extension-rollout --ref main \
-            -f command=publish -f release_tag=chrome-extension-v1.3.1 \
+            -f command=publish -f release_tag=chrome-extension-v1.3.2 \
             -f "request_id=review-timer-$GITHUB_RUN_ID"
-          echo 'Queued the pinned 1.3.1 release; preserve pending reviews and stop only after the target is published at 100%.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Queued the pinned 1.3.2 release; preserve pending reviews and stop only after the target is published at 100%.' >> "$GITHUB_STEP_SUMMARY"
