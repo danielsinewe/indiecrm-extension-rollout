@@ -46,3 +46,9 @@ credentials, Google passwords or service-account private keys. The controller
 has no CRM access and does not change workspace permissions or lead data.
 
 Run checks with node --test src/*.test.mjs. There are no package dependencies.
+
+## Completing the local Store handoff
+
+The release queue targets 1.3.3 and submits with DEFAULT_PUBLISH, so Google publishes it on approval. A staged approved predecessor is completed before the exact target is submitted. Only fresh Google proof that the target is PUBLISHED at 100% stops the release timer. The existing 15-minute clock was re-registered at minutes 11, 26, 41 and 56 UTC after no naturally scheduled run had appeared. Manual commissioning and naturally scheduled execution are recorded separately.
+
+Changing a local unpacked installation to the Store installation is a separate browser operation. Keep the working 1.3.3 copy until the public Store artifact is 1.3.3. Then replace only the matching development installation through the normal Store flow, re-pair the same CRM scope if needed, and verify normal installation source plus the Google update URL before deleting the unpacked folder. Do not infer a Store installation from the shared extension ID or Store page button. The local follow-up requires the Mac, Chrome and Codex to be available; cloud publication does not.
