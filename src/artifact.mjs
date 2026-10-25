@@ -35,7 +35,7 @@ export async function readRelease(directory, version) {
   if (
     files.some(
       (name) =>
-        !/^(manifest\.json|background\.js|popup\.(js|html|css)|content\.(js|css)|icons\/|icons\/icon-(16|32|48|128)\.png)$/.test(
+        !/^(manifest\.json|background\.js|ideal-customer\.js|sales-search\.(js|css)|popup\.(js|html|css)|content\.(js|css)|icons\/|icons\/icon-(16|32|48|128)\.png)$/.test(
           name,
         ),
     )
