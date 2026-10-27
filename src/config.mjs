@@ -6,6 +6,7 @@ export const ITEM = "eiabmmajcanapfaphkammeieoiagmifc";
 export const NAME = `publishers/${PUBLISHER}/items/${ITEM}`;
 export const API = "https://chromewebstore.googleapis.com";
 export const PINNED_RELEASES = {
+  "1.3.13": "ad584f6825e10e278ffc77b7b3388ad8127383321b75985744f66b2b41a8026b",
   "1.3.12": "7b2ee7f7cab262cb499a6a1c924a368b21aca8761d9fdf8fad4f9c8290fdf90c",
   "1.3.11": "cbe637537cd0ba5a7b71576a1483b8e870019207ffe5e6c71a7c64b5d881dd1a",
   "1.3.10": "1ea540254bed80da60ecf1059f9f51103f0eb7d047049668079eb00fbe8468ef",
