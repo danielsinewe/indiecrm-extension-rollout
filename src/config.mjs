@@ -1,6 +1,6 @@
 export const REPOSITORY = "danielsinewe/indiecrm-extension-rollout";
 export const BUCKET = "indiec-507107-chrome-releases";
-export const VERSION = "1.3.3";
+export const VERSION = "1.3.13";
 export const PUBLISHER = "bc8a3569-1d50-4414-a27f-ca85f54678cd";
 export const ITEM = "eiabmmajcanapfaphkammeieoiagmifc";
 export const NAME = `publishers/${PUBLISHER}/items/${ITEM}`;
