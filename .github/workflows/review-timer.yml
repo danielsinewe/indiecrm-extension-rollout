@@ -1,4 +1,4 @@
-name: Automatic 15-minute IndieCRM 1.3.14 rollout
+name: Automatic 15-minute IndieCRM 1.3.17 rollout
 run-name: Chrome review clock · ${{ inputs.clock_id }} · ${{ github.run_id }}
 on:
   workflow_dispatch:

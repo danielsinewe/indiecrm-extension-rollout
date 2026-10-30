@@ -1,11 +1,12 @@
 export const REPOSITORY = "danielsinewe/indiecrm-extension-rollout";
 export const BUCKET = "indiec-507107-chrome-releases";
-export const VERSION = "1.3.16";
+export const VERSION = "1.3.17";
 export const PUBLISHER = "bc8a3569-1d50-4414-a27f-ca85f54678cd";
 export const ITEM = "eiabmmajcanapfaphkammeieoiagmifc";
 export const NAME = `publishers/${PUBLISHER}/items/${ITEM}`;
 export const API = "https://chromewebstore.googleapis.com";
 export const PINNED_RELEASES = {
+  "1.3.17": "9dd5a160378be66b92667f964b68c19b299c389f9208fdf6920df76d5291f39a",
   "1.3.16": "038658e172d9e0d01c927895469a507215bcf2ec95cd643caa2bb99942101583",
   "1.3.15": "5e7e08819f7eb2ccc9bc7c77f0aba68cd5c348ff99b156d4c7fd0d5013e005fd",
   "1.3.14": "5c8d95da1caa764a9e792e455d947bdc54bc3a4ce8fde32054eb0f574d5df412",
