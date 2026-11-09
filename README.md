@@ -59,3 +59,12 @@ Changing a local unpacked installation to the Store installation is a separate b
 
 GitHub documents [environment wait timers](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments#wait-timer)
 and [workflow dispatch from the repository token](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow#triggering-a-workflow-from-a-workflow).
+
+
+The same review workflow also has a 15-minute scheduled recovery path in a
+separate concurrency group. A stalled delayed clock cannot block this path.
+It queues only the existing serialized publisher, never another delayed chain.
+The publisher disables the entire review workflow after fresh proof that the
+exact target is published at 100%, stopping both periodic paths. A manual
+`recovery_only` dispatch exercises this path without waiting for cron; it is not
+proof of a naturally scheduled run.

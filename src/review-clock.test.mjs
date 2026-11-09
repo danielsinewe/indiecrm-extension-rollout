@@ -63,3 +63,10 @@ test("a missing, zero or excessive delay cannot create a rapid dispatch loop", (
     assert.equal(h.calls.filter(c => c[0] === "workflow").length, 0);
   }
 });
+
+test("scheduled recovery queues only the serialized publisher, never another clock chain", () => {
+  const h=harness();
+  assert.deepEqual(continueReviewClock({...valid,run:h.run,queueSuccessor:false}),{action:"queued",publisherQueued:true,successorQueued:false,version:VERSION});
+  assert.equal(h.calls.filter(c=>c[0]==="workflow").length,1);
+  assert.equal(h.calls.find(c=>c[0]==="workflow")[2],"store.yml");
+});
