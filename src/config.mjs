@@ -1,11 +1,12 @@
 export const REPOSITORY = "danielsinewe/indiecrm-extension-rollout";
 export const BUCKET = "indiec-507107-chrome-releases";
-export const VERSION = "1.3.21";
+export const VERSION = "1.3.22";
 export const PUBLISHER = "bc8a3569-1d50-4414-a27f-ca85f54678cd";
 export const ITEM = "eiabmmajcanapfaphkammeieoiagmifc";
 export const NAME = `publishers/${PUBLISHER}/items/${ITEM}`;
 export const API = "https://chromewebstore.googleapis.com";
 export const PINNED_RELEASES = {
+  "1.3.22": "6d99b2668832a305f652c42611a024da1dd48ed7f1e22e2349b0a52bea497987",
   "1.3.21": "33acdcb055cfc87a6c0b511131da6bdd7f596d9dd446de0fb4926a06b0c133d1",
   "1.3.20": "1fd33497635b21c2c84a6926da0657ce9d8a72f48b12cac79477e1fe32820bc9",
   "1.3.18": "21dc5a6e2b1dfc5632d0975cfa5b263461db893af11690571fb5fd91a38e07d2",
