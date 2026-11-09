@@ -1,7 +1,7 @@
 # IndieCRM Connect release automation
 
-The current target is **1.3.3**, pinned to the exact tested GitHub release ZIP
-with SHA-256 `d4184019682d5c1ee6d80910ad4d64faf2f2778808b0ff6429536d46b239f354`.
+The current target is **1.3.20**, pinned to the exact tested GitHub release ZIP
+with SHA-256 `1fd33497635b21c2c84a6926da0657ce9d8a72f48b12cac79477e1fe32820bc9`.
 The existing GitHub `review-timer.yml` workflow uses the `chrome-review-delay`
 environment's 15-minute wait timer, then dispatches the keyless publisher and
 exactly one successor check. GitHub holds the delay before allocating a runner;
@@ -9,7 +9,7 @@ it needs no Mac, Codex, cron event, Google browser session or extra credential.
 The commissioned generation is pinned in `CHROME_REVIEW_CLOCK_ID`; disabling
 publication or changing that generation stops stale queued checks. It waits for pending
 reviews, submits the target once the preceding review clears, and disables only
-its own timer after fresh Google proof that 1.3.3 is published at 100%.
+its own timer after fresh Google proof that 1.3.20 is published at 100%.
 It runs independently of Codex, the Mac and Google browser sessions.
 
 The artifact is staged in the existing private Google Storage bucket with
