@@ -13,6 +13,7 @@ export function continueReviewClock({
   generation = process.env.REVIEW_CLOCK_ID,
   expectedGeneration = process.env.EXPECTED_CLOCK_ID,
   runId = process.env.GITHUB_RUN_ID,
+  queueSuccessor = true,
   run = (args) => execFileSync("gh", args, {
     encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 30000,
   }).trim(),
@@ -39,6 +40,7 @@ export function continueReviewClock({
     "-f", "command=publish", "-f", `release_tag=chrome-extension-v${VERSION}`,
     "-f", `request_id=review-clock-${runId}`,
   ]);
+  if (!queueSuccessor) return { action: "queued", publisherQueued: true, successorQueued: false, version: VERSION };
   // The publisher can disable the clock after final, fresh Google proof.
   if (state() !== "active") return { action: "stopped", publisherQueued: true };
   run([
